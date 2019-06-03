@@ -2,8 +2,6 @@
 namespace Model;
 require_once "ModelBase.php";
 
-
-
 class Client extends ModelBase
 {
 	public $ID_Client;
@@ -11,8 +9,6 @@ class Client extends ModelBase
 	public $FIO;
 	public $Phone;
 	public $Email;
-
-
 
 	protected static $select = "SELECT * FROM Client";
 

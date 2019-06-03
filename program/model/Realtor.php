@@ -10,7 +10,7 @@ class Realtor extends ModelBase
 	public $Email;
 	public $Password;
 	public $FIO;
-	public $CommissionSare;
+	public $CommissionShare;
 
 	
 	
@@ -18,7 +18,7 @@ class Realtor extends ModelBase
 
 	protected static $table = 'Realtor';
 	protected static $id = 'ID_Realtor';
-	protected static $fields = array('Email', 'Password', 'FIO', 'CommissionSare');
+	protected static $fields = array('Email', 'Password', 'FIO', 'CommissionShare');
 	protected static $types = "sssd";
 }
 ?>

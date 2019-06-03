@@ -37,7 +37,8 @@ abstract class ModelBase
 	public static function Select()
 	{
 		self::OpenConnection();
-		$result = mysqli_query(self::$connection, static::$select);
+		$query = static::$select . " WHERE " . static::$table .".IsDelete != 1";
+		$result = mysqli_query(self::$connection, $query);
 		$class = static::class;
 
 		$list = array();		
@@ -56,6 +57,28 @@ abstract class ModelBase
 		self::CloseConnection();
 
 		return $list;
+	}
+
+	public static function SelectByID($update_id)
+	{
+		self::OpenConnection();
+		$query = static::$select . " WHERE " . static::$table .".IsDelete != 1 AND ".static::$id." = $update_id";
+		$result = mysqli_query(self::$connection, $query);
+		$class = static::class;
+
+		$list = array();		
+		$row = mysqli_fetch_assoc($result);
+		$entity = new $class;
+		
+		foreach ($row as $key => $value)
+		{
+			$entity->$key = $value;
+		}
+
+    	mysqli_free_result($result);
+		self::CloseConnection();
+
+		return $entity;
 	}
 
 	public function Insert()
@@ -77,6 +100,19 @@ abstract class ModelBase
 	}
 
 	public function Delete()
+	{
+		$id = static::$id;
+		$types = 'i';
+
+		$values[] = $this->$id;
+
+		$query = "UPDATE " . static::$table . "SET IsDelete = 1 WHERE $id = ?;";
+
+
+		self::Query($query, $values, $types);
+	}
+
+	public function PermamentDelete()
 	{
 		$id = static::$id;
 		$types = 'i';
