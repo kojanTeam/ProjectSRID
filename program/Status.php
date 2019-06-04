@@ -2,6 +2,11 @@
 namespace Model;
 require_once "model\ModelBase.php";
 require_once "model\Status.php";
+session_start();
+if(!isset($_SESSION['id']))
+{
+    echo "<script> document.location = 'Auth.php'</script>";
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -16,6 +21,42 @@ require_once "model\Status.php";
     <link rel="stylesheet" href="libs/Bootstrap/css/bootstrap.min.css">
     
     <title>Document</title>
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function(){
+            $("button[name ='button_delete']").click(function(){
+                var radioValue = $("input[name='radio_id']:checked").val();
+                var id = radioValue;
+                var result = confirm( "Вы точно хотите удалить эту запись?" );
+                if (result)
+                {
+                   request = $.ajax({
+                    url: "Status.php",
+                    type: "post",
+                    data: "delete_id="+id,
+                    success: document.location = document.location});
+                }
+            });        
+        });
+    </script>
+    <script type="text/javascript">
+        $(document).ready(function(){
+            $("button[name ='button_update']").click(function(){
+                var radioValue = $("input[name='radio_id']:checked").val();
+                var id = radioValue;
+                var response = $.ajax({
+                    url: "StatusSelect.php",
+                    type: "post",
+                    data: "id="+id,
+                    success: function(data){
+                        var json = $.parseJSON(data);
+                        $("#contact_form_update input[name='id']").val(json.ID_Status);
+                        $("#contact_form_update input[name='name']").val(json.Name);
+                    }
+                });
+            });        
+        });
+    </script>
 </head>
 <body>
 <div class="section">
@@ -37,7 +78,7 @@ require_once "model\Status.php";
 
                         </ul>
                     </li>
-                    <li><a href="Auth.php">Выход</a></li>
+                    <li><a href="Logout.php">Выход</a></li>
                 </ul>
             </nav>
         </div>
@@ -59,48 +100,37 @@ require_once "model\Status.php";
                 $update_status->Name = $_POST['name'];
                 $update_status->Update();
             }
-            if(isset($_POST['button_delete_ok']))
+            if(isset($_POST['delete_id']))
             {
-                $delete_status = $status->SelectByID($_POST['id']);
+                $delete_status = $status->SelectByID($_POST['delete_id']);
                 $delete_status->PermamentDelete();
             }
 
             $all_statuses = $status->Select();
 
             echo '<table class="tableInfo col-lg-2" border="1">';
-            echo '<tr><th>ID Типа недвижимости</th><th>Тип недвижимости</th></tr>';
+            echo '<tr><th></th><th>ID Типа недвижимости</th><th>Тип недвижимости</th></tr>';
             foreach ($all_statuses as $single_status)
             {
                 echo '<tr>';
+                echo "<td><input type='radio' name = 'radio_id' value='$single_status->ID_Status'></td>";
                 echo '<td>' . $single_status->ID_Status . '</td>';
                 echo '<td>' . $single_status->Name . '</td>';
                 echo '</tr>';
             }
             echo '</table>';
-
-            function OptionStatus()
-            {
-                $status = new Status();
-                $all_statuses = $status->Select();
-                foreach ($all_statuses as $single_status)
-                {
-                    $id = $single_status->ID_Status;
-                    $name = $single_status->Name;
-                    echo '<option value="'.$id.'">'.$name.'</option>';
-                }
-            }
             
             ?>
             <div class="col-lg-2 buttons">
                 <button id="button_add">Добавить</button>
-                <button id="button_update">Редактировать</button>
-                <button id="button_delete">Удалить</button>
+                <button id="button_update" name="button_update">Редактировать</button>
+                <button id="button_delete" name="button_delete">Удалить</button>
             </div>
         </div>
     </div>
     <div class="container">
         <div class="row">
-            <form class="contact_form" action="#" method="post" name="contact_form" id="contact_form_add">
+            <form class="contact_form" method="post" name="contact_form" id="contact_form_add">
                 <ul>
                     <li>
                         <h2>Добавить</h2>
@@ -119,15 +149,12 @@ require_once "model\Status.php";
     </div>
     <div class="container">
         <div class="row">
-            <form class="contact_form" action="#" method="post" name="contact_form" id="contact_form_update">
+            <form class="contact_form" method="post" name="contact_form" id="contact_form_update">
                 <ul>
                     <li>
                         <h2>Редактировать</h2>
                     </li>
-                    <li>
-                        <label for="name">ID:</label>
-                        <input type="text" name="id" placeholder="1" required />
-                    </li>
+                    <input type="hidden" name="id"/>
                     <li>
                         <label for="name">Наименование:</label>
                         <input type="text" name="name" placeholder="Продаётся" required />
@@ -135,30 +162,6 @@ require_once "model\Status.php";
                     <li>
                         <button class="submit button_ok" type="submit" id="button_upd_ok" name="button_upd_ok">ОК</button>
                         <button class="submit button_cancel" type="button" id="button_upd_cancel" name="button_upd_cancel">Отмена</button>
-                    </li>
-                </ul>
-            </form>
-        </div>
-    </div>
-    <div class="container">
-        <div class="row">
-            <form class="contact_form" action="#" method="post" name="contact_form" id="contact_form_delete">
-                <ul>
-                    <li>
-                        <h2>Удалить</h2>
-                    </li>
-                    <li>
-                        <label for="id">ID:</label>
-                        <select name="id">-->
-                            <option disabled selected value>Выберите статус</option>
-                            <?php
-                            OptionStatus();
-                            ?>
-                        </select>
-                    </li>
-                    <li>
-                        <button class="submit button_ok" type="submit" id="button_delete_ok" name="button_delete_ok">ОК</button>
-                        <button class="submit button_cancel" type="button" id="button_delete_cancel" name="button_delete_cancel">Отмена</button>
                     </li>
                 </ul>
             </form>
@@ -186,13 +189,6 @@ require_once "model\Status.php";
 
         $('#table_status').addClass("nonvisible");   
         $('#contact_form_update').removeClass("nonvisible");   
-
-    });
-
-    $('#button_delete').click(function(){
-
-        $('#table_status').addClass("nonvisible");   
-        $('#contact_form_delete').removeClass("nonvisible");   
 
     });
 

@@ -3,6 +3,11 @@ namespace Model;
 require_once "model\ModelBase.php";
 require_once "model\TypeObj.php";
 require_once "model\ObjProperty.php";
+session_start();
+if(!isset($_SESSION['id']))
+{
+    echo "<script> document.location = 'Auth.php'</script>";
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -17,6 +22,52 @@ require_once "model\ObjProperty.php";
     <link rel="stylesheet" href="libs/Bootstrap/css/bootstrap.min.css">
 
     <title>Document</title>
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function(){
+            $("button[name ='button_delete']").click(function(){
+                var radioValue = $("input[name='radio_id']:checked").val();
+                var id = radioValue;
+                var result = confirm( "Вы точно хотите удалить эту запись?" );
+                if (result)
+                {
+                   request = $.ajax({
+                    url: "ObjProperty.php",
+                    type: "post",
+                    data: "delete_id="+id,
+                    success: document.location = document.location});
+                }
+            });        
+        });
+    </script>
+    <script type="text/javascript">
+        $(document).ready(function(){
+            $("button[name ='button_update']").click(function(){
+                var radioValue = $("input[name='radio_id']:checked").val();
+                var id = radioValue;
+                var response = $.ajax({
+                    url: "ObjPropertySelect.php",
+                    type: "post",
+                    data: "id="+id,
+                    success: function(data){
+                        var json = $.parseJSON(data);
+                        $("#contact_form_update input[name='id']").val(json.ID_ObjProperty);
+                        $("#contact_form_update input[name='coordX']").val(json.CoordX);
+                        $("#contact_form_update input[name='coordY']").val(json.CoordY);
+                        $("#contact_form_update input[name='city']").val(json.City);
+                        $("#contact_form_update input[name='street']").val(json.Street);
+                        $("#contact_form_update input[name='numHouse']").val(json.NumHouse);
+                        $("#contact_form_update input[name='numApart']").val(json.NumApart);
+                        $("#contact_form_update input[name='floor']").val(json.Floor);
+                        $("#contact_form_update input[name='countRoom']").val(json.KolvoRoom);
+                        $("#contact_form_update input[name='area']").val(json.Area);
+                        $("#contact_form_update input[name='countFloor']").val(json.NumFloors);
+                        $("#contact_form_update select[name='typeObj']").val(json.TypeObj_ID);
+                    }
+                });
+            });        
+        });
+    </script>
 </head>
 <body>
 <div class="section">
@@ -35,10 +86,9 @@ require_once "model\ObjProperty.php";
                             <li><a href="Need.php">Потребности</a></li>
                             <li><a href="TypeObj.php">Типы объекта</a></li>
                             <li><a href="Status.php">Статусы</a></li>
-
                         </ul>
                     </li>
-                    <li><a href="Auth.php">Выход</a></li>
+                    <li><a href="Logout.php">Выход</a></li>
                 </ul>
             </nav>
         </div>
@@ -62,6 +112,7 @@ require_once "model\ObjProperty.php";
                 $objproperty->Area = $_POST['area'];
                 $objproperty->NumFloors = $_POST['countFloor'];
                 $objproperty->TypeObj_ID = $_POST['typeObj'];
+                $objproperty->Insert();
             }
             if(isset($_POST['button_upd_ok']))
             {   
@@ -79,18 +130,19 @@ require_once "model\ObjProperty.php";
                 $update_objproperty->TypeObj_ID = $_POST['typeObj'];
                 $update_objproperty->Update();
             }
-            if(isset($_POST['button_delete_ok']))
+            if(isset($_POST['delete_id']))
             {
-                $delete_objproperty = $objproperty->SelectByID($_POST['id']);
+                $delete_objproperty = $objproperty->SelectByID($_POST['delete_id']);
                 $delete_objproperty->PermamentDelete();
             }
 
             $all_objpropertys = $objproperty->Select();
             echo '<table class="tableInfo col-lg-2" border="1">';
-            echo '<tr><th>ID Объекта</th><th>Координата X</th><th>Координата Y</th><th>Город</th><th>Улица</th><th>Номер дома</th><th>Номер квартиры</th><th>Этаж</th><th>Количество комнат</th><th>Площадь</th><th>Количество этажей</th><th>Типа объекта ID</th><th>Тип объекта</th></tr>';
+            echo '<tr><th></th><th>ID Объекта</th><th>Координата X</th><th>Координата Y</th><th>Город</th><th>Улица</th><th>Номер дома</th><th>Номер квартиры</th><th>Этаж</th><th>Количество комнат</th><th>Площадь</th><th>Количество этажей</th><th>Типа объекта ID</th><th>Тип объекта</th></tr>';
             foreach ($all_objpropertys as $single_objproperty)
             {
                 echo '<tr>';
+                echo "<td><input type='radio' name = 'radio_id' value='$single_objproperty->ID_ObjProperty'></td>";
                 echo '<td>' . $single_objproperty->ID_ObjProperty . '</td>';
                 echo '<td>' . $single_objproperty->CoordX . '</td>';
                 echo '<td>' . $single_objproperty->CoordY . '</td>';
@@ -119,28 +171,17 @@ require_once "model\ObjProperty.php";
                     echo '<option value="'.$id.'">'.$type.'</option>';
                 }
             }
-
-            function OptionObjProperty()
-            {
-                $objproperty = new ObjProperty();
-                $all_objpropertys = $objproperty->Select();
-                foreach ($all_objpropertys as $single_objproperty)
-                {
-                    $id = $single_objproperty->ID_ObjProperty;
-                    echo '<option value="'.$id.'">'.$id.'</option>';
-                }
-            }
             ?>
             <div class="col-lg-2 buttons">
                 <button id="button_add">Добавить</button>
-                <button id="button_update">Редактировать</button>
-                <button id="button_delete">Удалить</button>
+                <button id="button_update" name="button_update">Редактировать</button>
+                <button id="button_delete" name="button_delete">Удалить</button>
             </div>
         </div>
     </div>
     <div class="container">
         <div class="row">
-            <form class="contact_form" action="#" method="post" name="contact_form" id="contact_form_add">
+            <form class="contact_form" method="post" name="contact_form" id="contact_form_add">
                 <ul>
                     <li>
                         <h2>Добавить</h2>
@@ -204,15 +245,12 @@ require_once "model\ObjProperty.php";
     </div>
     <div class="container">
         <div class="row">
-            <form class="contact_form" action="#" method="post" name="contact_form" id="contact_form_update">
+            <form class="contact_form" method="post" name="contact_form" id="contact_form_update">
                 <ul>
                     <li>
                         <h2>Редактировать</h2>
                     </li>
-                    <li>
-                        <label for="name">ID:</label>
-                        <input type="text" name="id" placeholder="1" required />
-                    </li>
+                    <input type="hidden" name="id"/>
                     <li>
                         <label for="coordX">Координаты Х:</label>
                         <input type="text" name="coordX" placeholder="156,23" required/>
@@ -270,30 +308,6 @@ require_once "model\ObjProperty.php";
             </form>
         </div>
     </div>
-    <div class="container">
-        <div class="row">
-            <form class="contact_form" action="#" method="post" name="contact_form" id="contact_form_delete">
-                <ul>
-                    <li>
-                        <h2>Удалить</h2>
-                    </li>
-                    <li>
-                        <label for="id">ID:</label>
-                        <select name="id">-->
-                            <option disabled selected value>Выберите недвижимость</option>
-                            <?php
-                            OptionObjProperty();
-                            ?>
-                        </select>
-                    </li>
-                    <li>
-                        <button class="submit button_ok" type="submit" id="button_delete_ok" name="button_delete_ok">ОК</button>
-                        <button class="submit button_cancel" type="button" id="button_delete_cancel" name="button_delete_cancel">Отмена</button>
-                    </li>
-                </ul>
-            </form>
-        </div>
-    </div>
 </div>
 </body>
 
@@ -316,13 +330,6 @@ require_once "model\ObjProperty.php";
 
         $('#table_objproperty').addClass("nonvisible");   
         $('#contact_form_update').removeClass("nonvisible");   
-
-    });
-
-    $('#button_delete').click(function(){
-
-        $('#table_objproperty').addClass("nonvisible");   
-        $('#contact_form_delete').removeClass("nonvisible");   
 
     });
 

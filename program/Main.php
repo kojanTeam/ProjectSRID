@@ -1,3 +1,10 @@
+<?php
+session_start();
+if(!isset($_SESSION['id']))
+{
+    echo "<script> document.location = 'Auth.php'</script>";
+}
+?>
 <!doctype html>
 <html lang="en">
 <head>
@@ -28,17 +35,15 @@
                             <li><a href="Need.php">Потребности</a></li>
                             <li><a href="TypeObj.php">Типы объекта</a></li>
                             <li><a href="Status.php">Статусы</a></li>
-
                         </ul>
                     </li>
-                    <li><a href="Auth.php">Выход</a></li>
+                    <li><a href="Logout.php">Выход</a></li>
                 </ul>
             </nav>
         </div>
     </div>
     <div class="container">
         <div class="row">
-            <img src="https://coubsecure-s.akamaihd.net/get/b37/p/coub/simple/cw_timeline_pic/3bbffc362b1/5137305bbd2f0deb7e9b7/big_1531174762_image.jpg" height="1000" width="2000">
         </div>
     </div>
 

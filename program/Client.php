@@ -2,6 +2,11 @@
 namespace Model;
 require_once "model\ModelBase.php";
 require_once "model\Client.php";
+session_start();
+if(!isset($_SESSION['id']))
+{
+    echo "<script> document.location = 'Auth.php'</script>";
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -18,6 +23,44 @@ require_once "model\Client.php";
 
     
     <title>Document</title>
+   	<script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+	<script type="text/javascript">
+	    $(document).ready(function(){
+	        $("button[name ='button_delete']").click(function(){
+	        	var radioValue = $("input[name='radio_id']:checked").val();
+	        	var id = radioValue;
+	        	var result = confirm( "Вы точно хотите удалить эту запись?" );
+				if (result)
+				{
+				   request = $.ajax({
+			        url: "Client.php",
+			        type: "post",
+			        data: "delete_id="+id,
+			        success: document.location = document.location});
+				}
+	        });        
+	    });
+	</script>
+	<script type="text/javascript">
+	    $(document).ready(function(){
+	        $("button[name ='button_update']").click(function(){
+	        	var radioValue = $("input[name='radio_id']:checked").val();
+	        	var id = radioValue;
+	        	var response = $.ajax({
+			        url: "ClientSelect.php",
+			        type: "post",
+			        data: "id="+id,
+			        success: function(data){
+			        	var json = $.parseJSON(data);
+			        	$("#contact_form_update input[name='id']").val(json.ID_Client);
+			        	$("#contact_form_update input[name='fio']").val(json.FIO);
+			        	$("#contact_form_update input[name='phone']").val(json.Phone);
+			        	$("#contact_form_update input[name='email']").val(json.Email);
+			        }
+			    });
+	        });        
+	    });
+	</script>
 </head>
 <body>
 <div class="section">
@@ -38,7 +81,7 @@ require_once "model\Client.php";
                             <li><a href="Status.php">Статусы</a></li>
                         </ul>
                     </li>
-                    <li><a href="Auth.php">Выход</a></li>
+                    <li><a href="Logout.php">Выход</a></li>
                 </ul>
             </nav>
         </div>
@@ -48,6 +91,7 @@ require_once "model\Client.php";
             <h3>Клиенты</h3>
 
             <?php
+
             $client = new Client();
             
             if(isset($_POST['button_add_ok']))
@@ -65,19 +109,20 @@ require_once "model\Client.php";
                 $update_client->Email = $_POST['email'];
                 $update_client->Update();
             }
-            if(isset($_POST['button_delete_ok']))
+            if(isset($_POST['delete_id']))
             {
-                $delete_client = $client->SelectByID($_POST['id']);
+                $delete_client = $client->SelectByID($_POST['delete_id']);
                 $delete_client->PermamentDelete();
             }
 
             $all_clients = $client->Select();
 
             echo '<table class="tableInfo col-lg-2" border="1">';
-            echo '<tr><th>ID Клиента</th><th>ФИО</th><th>Телефон</th><th>Email</th></tr>';
+            echo '<tr><th></th><th>ID Клиента</th><th>ФИО</th><th>Телефон</th><th>Email</th></tr>';
             foreach ($all_clients as $single_client)
             {
                 echo '<tr>';
+                echo "<td><input type='radio' name='radio_id' value='$single_client->ID_Client'></td>";
                 echo '<td>' . $single_client->ID_Client . '</td>';
                 echo '<td>' . $single_client->FIO . '</td>';
                 echo '<td>' . $single_client->Phone . '</td>';
@@ -85,29 +130,17 @@ require_once "model\Client.php";
                 echo '</tr>';
             }
             echo '</table>';
-
-            function OptionClient()
-            {
-                $client = new Client();
-                $all_clients = $client->Select();
-                foreach ($all_clients as $single_client)
-                {
-                    $id = $single_client->ID_Client;
-                    $fio = $single_client->FIO;
-                    echo '<option value="'.$id.'">'.$fio.'</option>';
-                }
-            }
             ?>
             <div class="col-lg-2 buttons">
                 <button id="button_add">Добавить</button>
-                <button id="button_update">Редактировать</button>
-                <button id="button_delete">Удалить</button>
+                <button id="button_update" name="button_update">Редактировать</button>
+                <button id="button_delete" name="button_delete">Удалить</button>
             </div>
         </div>
     </div>
     <div class="container">
         <div class="row">
-            <form class="contact_form" action="#" method="post" name="contact_form" id="contact_form_add">
+            <form class="contact_form" method="post" name="contact_form" id="contact_form_add">
                 <ul>
                     <li>
                         <h2>Добавить</h2>
@@ -126,10 +159,6 @@ require_once "model\Client.php";
                         <input type="email" name="email" placeholder="JhonDoe@mail.ru" required/>
                         <span class="form_hint">Формат "som@something.ru"</span>
                     </li>
-                    <!--                    <li>-->
-                    <!--                        <label for="message">Message:</label>-->
-                    <!--                        <textarea name="message" cols="40" rows="6" required ></textarea>-->
-                    <!--                    </li>-->
                     <li>
                         <button class="submit button_ok" type="submit" id="button_add_ok" name="button_add_ok">ОК</button>
                         <button class="submit button_cancel" type="button" id="button_add_cancel" name="button_add_cancel">Отмена</button>
@@ -140,15 +169,12 @@ require_once "model\Client.php";
     </div>
     <div class="container">
         <div class="row">
-            <form class="contact_form" action="#" method="post" name="contact_form" id="contact_form_update">
+            <form class="contact_form" method="post" name="contact_form" id="contact_form_update">
                 <ul>
                     <li>
                         <h2>Редактировать</h2>
                     </li>
-                    <li>
-                        <label for="name">ID:</label>
-                        <input type="text" name="id" placeholder="1" required />
-                    </li>
+                    <input type="hidden" name="id"/>
                     <li>
                         <label for="name">ФИО:</label>
                         <input type="text" name="fio" placeholder="Федоров Илья Петрович" required />
@@ -163,37 +189,9 @@ require_once "model\Client.php";
                         <input type="email" name="email" placeholder="JhonDoe@mail.ru" required/>
                         <span class="form_hint">Формат "som@something.ru"</span>
                     </li>
-                    <!--                    <li>-->
-                    <!--                        <label for="message">Message:</label>-->
-                    <!--                        <textarea name="message" cols="40" rows="6" required ></textarea>-->
-                    <!--                    </li>-->
                     <li>
                         <button class="submit button_ok" type="submit" id="button_upd_ok" name="button_upd_ok">ОК</button>
                         <button class="submit button_cancel" type="button" id="button_upd_cancel" name="button_upd_cancel">Отмена</button>
-                    </li>
-                </ul>
-            </form>
-        </div>
-    </div>
-    <div class="container">
-        <div class="row">
-            <form class="contact_form" action="#" method="post" name="contact_form" id="contact_form_delete">
-                <ul>
-                    <li>
-                        <h2>Удалить</h2>
-                    </li>
-                    <li>
-                        <label for="id">ID:</label>
-                        <select name="id">-->
-                            <option disabled selected value>Выберите клиента</option>
-                            <?php
-                            OptionClient();
-                            ?>
-                        </select>
-                    </li>
-                    <li>
-                        <button class="submit button_ok" type="submit" id="button_delete_ok" name="button_delete_ok">ОК</button>
-                        <button class="submit button_cancel" type="button" id="button_delete_cancel" name="button_delete_cancel">Отмена</button>
                     </li>
                 </ul>
             </form>
@@ -220,13 +218,6 @@ require_once "model\Client.php";
 
         $('#table_clients').addClass("nonvisible");   
         $('#contact_form_update').removeClass("nonvisible");   
-
-    });
-
-    $('#button_delete').click(function(){
-
-        $('#table_clients').addClass("nonvisible");   
-        $('#contact_form_delete').removeClass("nonvisible");   
 
     });
 

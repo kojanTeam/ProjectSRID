@@ -2,6 +2,11 @@
 namespace Model;
 require_once "model\ModelBase.php";
 require_once "model\Realtor.php";
+session_start();
+if(!isset($_SESSION['id']))
+{
+    echo "<script> document.location = 'Auth.php'</script>";
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -16,6 +21,45 @@ require_once "model\Realtor.php";
     <link rel="stylesheet" href="libs/Bootstrap/css/bootstrap.min.css">
     
     <title>Document</title>
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function(){
+            $("button[name ='button_delete']").click(function(){
+                var radioValue = $("input[name='radio_id']:checked").val();
+                var id = radioValue;
+                var result = confirm( "Вы точно хотите удалить эту запись?" );
+                if (result)
+                {
+                   request = $.ajax({
+                    url: "Realtor.php",
+                    type: "post",
+                    data: "delete_id="+id,
+                    success: document.location = document.location});
+                }
+            });        
+        });
+    </script>
+    <script type="text/javascript">
+        $(document).ready(function(){
+            $("button[name ='button_update']").click(function(){
+                var radioValue = $("input[name='radio_id']:checked").val();
+                var id = radioValue;
+                var response = $.ajax({
+                    url: "RealtorSelect.php",
+                    type: "post",
+                    data: "id="+id,
+                    success: function(data){
+                        var json = $.parseJSON(data);
+                        $("#contact_form_update input[name='id']").val(json.ID_Realtor);
+                        $("#contact_form_update input[name='fio']").val(json.FIO);
+                        $("#contact_form_update input[name='email']").val(json.Email);
+                        $("#contact_form_update input[name='password']").val(json.Password);
+                        $("#contact_form_update input[name='commission']").val(json.CommissionShare);
+                    }
+                });
+            });        
+        });
+    </script>
 </head>
 <body>
 <div class="section">
@@ -36,7 +80,7 @@ require_once "model\Realtor.php";
                             <li><a href="Status.php">Статусы</a></li>
                         </ul>
                     </li>
-                    <li><a href="Auth.php">Выход</a></li>
+                    <li><a href="Logout.php">Выход</a></li>
                 </ul>
             </nav>
         </div>
@@ -63,21 +107,21 @@ require_once "model\Realtor.php";
                 $update_realtor->FIO = $_POST['fio'];
                 $update_realtor->CommissionShare = $_POST['commission'];
                 $update_realtor->Update();
-                echo $_POST['id'].$_POST['email'].$_POST['password'].$_POST['fio'].$_POST['commission'];
             }
-            if(isset($_POST['button_delete_ok']))
+            if(isset($_POST['delete_id']))
             {
-                $delete_realtor = $realtor->SelectByID($_POST['id']);
+                $delete_realtor = $realtor->SelectByID($_POST['delete_id']);
                 $delete_realtor->PermamentDelete();
             }
 
             $all_realtors = $realtor->Select();
 
             echo '<table class="tableInfo col-lg-2" border="1">';
-            echo '<tr><th>ID Риелтора</th><th>ФИО</th><th>Email</th><th>Пароль</th><th>Коммиссия</th></tr>';
+            echo '<tr><th></th><th>ID Риелтора</th><th>ФИО</th><th>Email</th><th>Пароль</th><th>Коммиссия</th></tr>';
             foreach ($all_realtors as $single_realtor)
             {
                 echo '<tr>';
+                echo "<td><input type='radio' name = 'radio_id' value='$single_realtor->ID_Realtor'></td>";
                 echo '<td>' . $single_realtor->ID_Realtor . '</td>';
                 echo '<td>' . $single_realtor->FIO . '</td>';
                 echo '<td>' . $single_realtor->Email . '</td>';
@@ -86,29 +130,17 @@ require_once "model\Realtor.php";
                 echo '</tr>';
             }
             echo '</table>';
-
-            function OptionRealtor()
-            {
-                $realtor = new Realtor();
-                $all_realtors = $realtor->Select();
-                foreach ($all_realtors as $single_realtor)
-                {
-                    $id = $single_realtor->ID_Realtor;
-                    $fio = $single_realtor->FIO;
-                    echo '<option value="'.$id.'">'.$fio.'</option>';
-                }
-            }
             ?>
             <div class="col-lg-2 buttons">
                 <button id="button_add">Добавить</button>
-                <button id="button_update">Редактировать</button>
-                <button id="button_delete">Удалить</button>
+                <button id="button_update" name = "button_update">Редактировать</button>
+                <button id="button_delete" name = "button_delete">Удалить</button>
             </div>
         </div>
     </div>
     <div class="container">
         <div class="row">
-            <form class="contact_form" action="#" method="post" name="contact_form" id="contact_form_add">
+            <form class="contact_form" method="post" name="contact_form" id="contact_form_add">
                 <ul>
                     <li>
                         <h2>Добавить</h2>
@@ -140,15 +172,12 @@ require_once "model\Realtor.php";
     </div>
     <div class="container">
         <div class="row">
-            <form class="contact_form" action="#" method="post" name="contact_form" id="contact_form_update">
+            <form class="contact_form" method="post" name="contact_form" id="contact_form_update">
                 <ul>
                     <li>
                         <h2>Редактировать</h2>
                     </li>
-                    <li>
-                        <label for="name">ID:</label>
-                        <input type="text" name="id" placeholder="1" required />
-                    </li>
+                    <input type="hidden" name="id"/>
                     <li>
                         <label for="name">ФИО:</label>
                         <input type="text" name="fio" placeholder="Федоров Илья Петрович" required />
@@ -170,30 +199,6 @@ require_once "model\Realtor.php";
                     <li>
                         <button class="submit button_ok" type="submit" id="button_upd_ok" name="button_upd_ok">ОК</button>
                         <button class="submit button_cancel" type="button" id="button_upd_cancel" name="button_upd_cancel">Отмена</button>
-                    </li>
-                </ul>
-            </form>
-        </div>
-    </div>
-    <div class="container">
-        <div class="row">
-            <form class="contact_form" action="#" method="post" name="contact_form" id="contact_form_delete">
-                <ul>
-                    <li>
-                        <h2>Удалить</h2>
-                    </li>
-                    <li>
-                        <label for="id">ID:</label>
-                        <select name="id">-->
-                            <option disabled selected value>Выберите риелтора</option>
-                            <?php
-                            OptionRealtor();
-                            ?>
-                        </select>
-                    </li>
-                    <li>
-                        <button class="submit button_ok" type="submit" id="button_delete_ok" name="button_delete_ok">ОК</button>
-                        <button class="submit button_cancel" type="button" id="button_delete_cancel" name="button_delete_cancel">Отмена</button>
                     </li>
                 </ul>
             </form>
@@ -221,13 +226,6 @@ require_once "model\Realtor.php";
 
         $('#table_realtor').addClass("nonvisible");   
         $('#contact_form_update').removeClass("nonvisible");   
-
-    });
-
-    $('#button_delete').click(function(){
-
-        $('#table_realtor').addClass("nonvisible");   
-        $('#contact_form_delete').removeClass("nonvisible");   
 
     });
 

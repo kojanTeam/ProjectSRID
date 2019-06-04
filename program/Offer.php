@@ -6,6 +6,11 @@ require_once "model\Client.php";
 require_once "model\ObjProperty.php";
 require_once "model\Status.php";
 require_once "model\Offer.php";
+session_start();
+if(!isset($_SESSION['id']))
+{
+    echo "<script> document.location = 'Auth.php'</script>";
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -20,6 +25,46 @@ require_once "model\Offer.php";
     <link rel="stylesheet" href="libs/Bootstrap/css/bootstrap.min.css">
     
     <title>Document</title>
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function(){
+            $("button[name ='button_delete']").click(function(){
+                var radioValue = $("input[name='radio_id']:checked").val();
+                var id = radioValue;
+                var result = confirm( "Вы точно хотите удалить эту запись?" );
+                if (result)
+                {
+                   request = $.ajax({
+                    url: "Offer.php",
+                    type: "post",
+                    data: "delete_id="+id,
+                    success: document.location = document.location});
+                }
+            });        
+        });
+    </script>
+    <script type="text/javascript">
+        $(document).ready(function(){
+            $("button[name ='button_update']").click(function(){
+                var radioValue = $("input[name='radio_id']:checked").val();
+                var id = radioValue;
+                var response = $.ajax({
+                    url: "OfferSelect.php",
+                    type: "post",
+                    data: "id="+id,
+                    success: function(data){
+                        var json = $.parseJSON(data);
+                        $("#contact_form_update input[name='id']").val(json.ID_Offer);
+                        $("#contact_form_update select[name='realtor']").val(json.Realtor_ID);
+                        $("#contact_form_update select[name='client']").val(json.Client_ID);
+                        $("#contact_form_update select[name='objProperty']").val(json.ObjProperty_ID);
+                        $("#contact_form_update input[name='price']").val(json.Price);
+                        $("#contact_form_update select[name='status']").val(json.Status_ID);
+                    }
+                });
+            });        
+        });
+    </script>
 </head>
 <body>
 <div class="section">
@@ -40,7 +85,7 @@ require_once "model\Offer.php";
                             <li><a href="Status.php">Статусы</a></li>
                         </ul>
                     </li>
-                    <li><a href="Auth.php">Выход</a></li>
+                    <li><a href="Logout.php">Выход</a></li>
                 </ul>
             </nav>
         </div>
@@ -70,18 +115,19 @@ require_once "model\Offer.php";
                 $update_offer->Status_ID = $_POST['status'];
                 $update_offer->Update();
             }
-            if(isset($_POST['button_delete_ok']))
+            if(isset($_POST['delete_id']))
             {
-                $delete_offer = $offer->SelectByID($_POST['id']);
+                $delete_offer = $offer->SelectByID($_POST['delete_id']);
                 $delete_offer->PermamentDelete();
             }
 
             $all_offers = $offer->Select();
             echo '<table class="tableInfo col-lg-2" border="1">';
-            echo '<tr><th>ID Предложения</th><th>Риелтора ID</th><th>Риелтора ФИО</th><th>Клиента ID</th><th>Клиента ФИО</th><th>Недвижимости ID</th><th>Цена</th><th>Статусa ID</th><th>Статус</th></tr>';
+            echo '<tr><th></th><th>ID Предложения</th><th>Риелтора ID</th><th>Риелтора ФИО</th><th>Клиента ID</th><th>Клиента ФИО</th><th>Недвижимости ID</th><th>Цена</th><th>Статусa ID</th><th>Статус</th></tr>';
             foreach ($all_offers as $single_offer)
             {
                 echo '<tr>';
+                echo "<td><input type='radio' name = 'radio_id' value='$single_offer->ID_Offer'></td>";
                 echo '<td>' . $single_offer->ID_Offer . '</td>';
                 echo '<td>' . $single_offer->Realtor_ID . '</td>';
                 echo '<td>' . $single_offer->Realtor_FIO . '</td>';
@@ -142,27 +188,17 @@ require_once "model\Offer.php";
                 }
             }
 
-            function OptionOffer()
-            {
-                $offer = new Offer();
-                $all_offers = $offer->Select();
-                foreach ($all_offers as $single_offer)
-                {
-                    $id = $single_offer->ID_Offer;
-                    echo '<option value="'.$id.'">'.$id.'</option>';
-                }
-            }
             ?>
             <div class="col-lg-2 buttons">
                 <button id="button_add">Добавить</button>
-                <button id="button_update">Редактировать</button>
-                <button id="button_delete">Удалить</button>
+                <button id="button_update" name="button_update">Редактировать</button>
+                <button id="button_delete" name="button_delete">Удалить</button>
             </div>
         </div>
     </div>
     <div class="container">
         <div class="row">
-            <form class="contact_form" action="#" method="post" name="contact_form" id="contact_form_add">
+            <form class="contact_form" method="post" name="contact_form" id="contact_form_add">
                 <ul>
                     <li>
                         <h2>Добавить</h2>
@@ -217,15 +253,12 @@ require_once "model\Offer.php";
     </div>
     <div class="container">
         <div class="row">
-            <form class="contact_form" action="#" method="post" name="contact_form" id="contact_form_update">
+            <form class="contact_form" method="post" name="contact_form" id="contact_form_update">
                 <ul>
                     <li>
                         <h2>Редактировать</h2>
                     </li>
-                    <li>
-                        <label for="name">ID:</label>
-                        <input type="text" name="id" placeholder="1" required />
-                    </li>
+                    <input type="hidden" name="id"/>
                     <li>
                         <label for="realtor">Риэлтор</label>
                         <select name="realtor">-->
@@ -274,30 +307,6 @@ require_once "model\Offer.php";
             </form>
         </div>
     </div>
-    <div class="container">
-        <div class="row">
-            <form class="contact_form" action="#" method="post" name="contact_form" id="contact_form_delete">
-                <ul>
-                    <li>
-                        <h2>Удалить</h2>
-                    </li>
-                    <li>
-                        <label for="id">ID:</label>
-                        <select name="id">-->
-                            <option disabled selected value>Выберите предложение</option>
-                            <?php
-                            OptionOffer();
-                            ?>
-                        </select>
-                    </li>
-                    <li>
-                        <button class="submit button_ok" type="submit" id="button_delete_ok" name="button_delete_ok">ОК</button>
-                        <button class="submit button_cancel" type="button" id="button_delete_cancel" name="button_delete_cancel">Отмена</button>
-                    </li>
-                </ul>
-            </form>
-        </div>
-    </div>
 </div>
 </body>
 
@@ -320,13 +329,6 @@ require_once "model\Offer.php";
 
         $('#table_offer').addClass("nonvisible");   
         $('#contact_form_update').removeClass("nonvisible");   
-
-    });
-
-    $('#button_delete').click(function(){
-
-        $('#table_offer').addClass("nonvisible");   
-        $('#contact_form_delete').removeClass("nonvisible");   
 
     });
 

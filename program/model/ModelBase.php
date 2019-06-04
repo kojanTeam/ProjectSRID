@@ -21,7 +21,6 @@ abstract class ModelBase
 
 
 
-
 	private static function OpenConnection()
 	{
 		self::$connection = mysqli_connect(self::$db_host, self::$db_username, self::$db_password, self::$db_name);
@@ -31,8 +30,6 @@ abstract class ModelBase
 	{
 		mysqli_close(self::$connection);
 	}
-
-
 
 	public static function Select()
 	{
